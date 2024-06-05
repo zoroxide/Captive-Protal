@@ -2,10 +2,9 @@
 #include <ESPAsyncWebServer.h>
 #include <Preferences.h>
 
-// Define the GPIO pins
-#define LED_PIN 2
-#define RELAY_PIN 13
-#define RELAY_PIN_A 23
+#define LED_PIN 2 //built in
+#define RELAY_PIN 13 // P13
+#define RELAY_PIN_A 23 // P23
 
 const char *ap_ssid = "ESP32-Access-Point";
 const char *ap_password = "12345678";
@@ -29,13 +28,6 @@ void setup() {
   digitalWrite(RELAY_PIN_A, LOW);
   Serial.begin(115200);
 
-  // Initialize the LED and relay pins
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
-  pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);
-
-  // Initialize preferences
   preferences.begin("wifi-creds", false);
 
   // Check if credentials are already saved
@@ -49,7 +41,8 @@ void setup() {
     Serial.print("Connecting to ");
     Serial.println(savedSSID);
 
-    if (!tryConnectWiFi(60000)) {  // Try to connect for 60 seconds
+    // Try to connect for 60 seconds
+    if (!tryConnectWiFi(60000)) {  
       Serial.println("Failed to connect to saved WiFi network.");
       ESP.restart();
     } else {
@@ -89,13 +82,12 @@ void startConfigPortal() {
   Serial.print("AP IP address: ");
   Serial.println(WiFi.softAPIP());
 
-  // Serve the configuration page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", R"rawliteral(
       <!DOCTYPE html>
       <html>
       <head>
-        <title>ESP32 WiFi Configuration</title>
+        <title>WiFi Configuration</title>
         <style>
           body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
           .container { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; width: 300px; }
@@ -137,7 +129,7 @@ void startConfigPortal() {
           <!DOCTYPE html>
           <html>
           <head>
-            <title>ESP32 WiFi Configuration</title>
+            <title>WiFi Configuration</title>
             <style>
               body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
               .container { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
@@ -161,11 +153,10 @@ void startConfigPortal() {
     }
 });
 
-// Add a route to clear preferences and restart
 server.on("/clear", HTTP_GET, [](AsyncWebServerRequest *request) {
   preferences.clear();
   request->send(200, "text/html", "<h1>Preferences cleared. Device will restart.</h1>");
-  delay(2000);
+  delay(1000);
   ESP.restart();
 });
 
@@ -173,13 +164,12 @@ server.begin();
 }
 
 void startServer() {
-  // Serve the LED control page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
     request->send(200, "text/html", R"rawliteral(
       <!DOCTYPE html>
       <html>
       <head>
-        <title>ESP32 LED Control</title>
+        <title>Control</title>
         <style>
           body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
           .container { display: inline-block; padding: 20px; border: 1px solid #ccc; border-radius: 10px; }
@@ -192,10 +182,10 @@ void startServer() {
       </head>
       <body>
         <div class="container">
-          <h1>ESP32 LED Control</h1>
-          <p>LED : </p><button id="toggleButton" class="off" onclick="toggleLED()">OFF</button><br><br>
-          <p>Relay 1:</p><button id="toggleButtonrelay" class="off" onclick="toggleRelay()">OFF</button><br><br>
-          <p>Relay 2:</p><button id="toggleButtonrelay_a" class="off" onclick="toggleRelayA()">OFF</button><br><br>
+          <h1>Devices Control Panel</h1>
+          <p>RGB LED : </p><button id="toggleButton" class="off" onclick="toggleLED()">OFF</button><br><br>
+          <p>FAN :</p><button id="toggleButtonrelay" class="off" onclick="toggleRelay()">OFF</button><br><br>
+          <p>Heater:</p><button id="toggleButtonrelay_a" class="off" onclick="toggleRelayA()">OFF</button><br><br>
           <button class="reset" onclick="resetPreferences()">Reset WiFi</button>
         </div>
         <script>
@@ -220,11 +210,11 @@ void startServer() {
               .then(state => {
                 const button = document.getElementById('toggleButtonrelay');
                 if (state === 'ON') {
-                  button.textContent = 'ON';
-                  button.className = 'on';
-                } else {
                   button.textContent = 'OFF';
                   button.className = 'off';
+                } else {
+                  button.textContent = 'ON';
+                  button.className = 'on';
                 }
               });
           }
@@ -235,11 +225,11 @@ void startServer() {
               .then(state => {
                 const button = document.getElementById('toggleButtonrelay_a');
                 if (state === 'ON') {
-                  button.textContent = 'ON';
-                  button.className = 'on';
-                } else {
                   button.textContent = 'OFF';
                   button.className = 'off';
+                } else {
+                  button.textContent = 'ON';
+                  button.className = 'on';
                 }
               });
           }
@@ -256,7 +246,6 @@ void startServer() {
     )rawliteral");
   });
 
-  // Handle the LED toggle request
   server.on("/toggle", HTTP_GET, [](AsyncWebServerRequest *request) {
     int ledState = digitalRead(LED_PIN);
     int relayState = digitalRead(RELAY_PIN);
